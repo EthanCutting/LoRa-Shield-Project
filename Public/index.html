@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LoRa Messaging System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #4b4949; /* Dark background */
+      margin: 0;
+      padding: 0;
+    }
+    .chat-container {
+      max-width: 700px;
+      margin: 50px auto;
+      background-color: #1f1f1f; /* Darker background */
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .chat-header {
+      background-color: #128C7E; /* Green header */
+      color: #fff;
+      padding: 15px;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .chat-box {
+      border: 2px solid #333; /* Dark border */
+      background-color: #333; /* Darker background */
+      width: 94%;
+      height: 500px;
+      overflow-y: scroll;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .message {
+      background-color: #222; /* Darker message background */
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      color: #fff; /* White text */
+    }
+    .user-message {
+      text-align: right;
+    }
+    .message-form {
+      padding: 20px;
+      display: flex;
+    }
+    .message-input {
+      flex: 1;
+      padding: 15px;
+      border-radius: 20px;
+      border: 2px solid #333; /* Dark border */
+      margin-right: 20px;
+      font-size: 16px;
+      color: #fff; /* White text */
+      background-color: #333; /* Darker background */
+    }
+    .send-button {
+      background-color: #128C7E; /* Green button */
+      color: #fff;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 16px;
+    }
+    .send-button:hover {
+      background-color: #0a684f; /* Darker green on hover */
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>LoRa Messaging System</h2>
+    </div>
+    <div class="chat-box" id="chatBox"></div>
+    <form id="messageForm" class="message-form">
+      <input type="text" id="messageInput" class="message-input" placeholder="Enter message">
+      <button type="submit" class="send-button">Send</button>
+    </form>
+  </div>
+
+  <script>
+   const socket = new WebSocket('ws://localhost:8080');
+
+  socket.addEventListener('open', function (event) 
+  {
+    console.log('Connected to WebSocket server');
+  });
+
+  socket.addEventListener('message', function (event) 
+  {
+    console.log('Message from server:', event.data);
+    receiveMessage(event.data);
+  });
+
+  document.getElementById('messageForm').addEventListener('submit', function(event) 
+  {
+    event.preventDefault();
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value;
+    socket.send(message);
+    messageInput.value = '';
+  });
+
+  function receiveMessage(message) {
+  const chatBox = document.getElementById('chatBox');
+  const newMessage = document.createElement('div');
+
+  // Check if the message is a Blob object
+  if (message instanceof Blob) {
+    // Convert Blob to a string
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      newMessage.textContent = event.target.result;
+    };
+    reader.readAsText(message);
+  } else {
+    // If message is not a Blob object, display it directly
+    newMessage.textContent = message;
+  }
+
+  newMessage.className = 'message';
+  chatBox.appendChild(newMessage);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+  </script>
+</body>
+</html>
