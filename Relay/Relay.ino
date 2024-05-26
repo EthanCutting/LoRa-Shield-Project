@@ -1,91 +1,80 @@
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WiFiServer.h>
-#include <WiFiUdp.h>
-
 #include <SPI.h>
 #include <RH_RF95.h>
+#include <AES.h> // Include the AES library
 
 // Define LoRa settings
 #define BAND    915.0 // Frequency in MHz
 #define SENDER_ID 'A' // Sender ID for Relay
 
-const char* ssid = "TelstraA156F1_EXT";     // Your WiFi SSID
-const char* password = "r4yrsnrb54"; // Your WiFi password
+// Define the key for encryption
+const char* encryptionKey = "2q3rf!rT$#56yH8jPkL9@1aB"; 
 
 RH_RF95 rf95;
+AES aes;
+
+// Declaration of the sendMessage function
+void sendMessage(byte* message, size_t len);
 
 void setup() {
   Serial.begin(9600);
   
-  // Initialize WiFi connection
-  Serial.println("Connecting to WiFi...");
-  WiFi.begin(ssid, password);
-  
-  // Wait for WiFi connection
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
-    Serial.print(".");
-    attempts++;
-  }
-  
-  // Print WiFi connection status
-  Serial.println("");
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("WiFi connected");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-  } else {
-    Serial.println("WiFi connection failed. Please check your credentials and try again.");
-    while (1); // Halt if WiFi connection failed
-  }
-  
-  // Initialize LoRa module
   if (!rf95.init()) {
-    Serial.println("Initialization of LoRa module failed.");
+    Serial.println("Initialization of LoRa transmitter failed");
     while (1); // Halt if initialization failed
   }
   
-  // Configure LoRa settings
   rf95.setFrequency(BAND);   
   rf95.setTxPower(23, false);
   rf95.setSignalBandwidth(500000);
   rf95.setSpreadingFactor(12);
+  
+  // Set the encryption key
+  aes.set_key((byte*)encryptionKey, 16); // AES-128 encryption key size is 16 bytes
 }
-
 
 void loop() {
   // Hardcoded password
   char password[] = "hi";
 
+  // Input buffer
+  char input[100];
+  memset(input, 0, sizeof(input)); // Initialize buffer to all zeroes
+
+  Serial.print("Enter password: ");
+  while (Serial.available() == 0); // Wait for input
+  Serial.readBytesUntil('\n', input, sizeof(input) - 1); // Read input from serial monitor
+  input[strlen(input)] = '\0'; // Ensure null-termination
+
   // Debugging output
-  Serial.println("Entered password: " + String(password));
+  Serial.println("Entered password: " + String(input));
 
   // Check if the entered password matches the hardcoded one
-  if (strcmp(password, "hi") == 0) {
+  if (strcmp(input, password) == 0) {
     Serial.println("Access granted!");
     
     // Prepare the message with sender's identity and content
-    String message = "Sending from Sender ";
-    message += SENDER_ID;
-    message += ": Hello from Relay";
+    String message = "Hello from Relay";
 
-    // Print the message
-    Serial.println(message);
+    // Encrypt the message
+    byte encrypted[16]; // AES-128 encryption produces 16-byte output
+    aes.encrypt((byte*)message.c_str(), encrypted);
 
-    // Send the message over LoRa
-    sendMessage(message);
+    // Send the encrypted message over LoRa
+    sendMessage(encrypted, 16);
     
     // Add your code for granting access here
   } else {
     Serial.println("Access denied!");
     
     // Prepare the message with sender's identity
-    String message = "Access denied by Relay";
+    String message = "Denied";
 
-    // Send the message over LoRa
-    sendMessage(message);
+    // Encrypt the message
+    byte encrypted[16]; // AES-128 encryption produces 16-byte output
+    aes.encrypt((byte*)message.c_str(), encrypted);
+
+    // Send the encrypted message over LoRa
+    sendMessage(encrypted, 16);
     
     // Add your code for denying access here
   }
@@ -93,18 +82,20 @@ void loop() {
   delay(1000); // Delay for stability
 }
 
-void sendMessage(String message) {
+// Definition of the sendMessage function
+void sendMessage(byte* message, size_t len) {
   // Print the sender ID and message being sent
   Serial.print("Sending from Sender ");
   Serial.print(SENDER_ID);
   Serial.print(": ");
-  Serial.println(message);
+  for (int i = 0; i < len; i++) {
+    Serial.print(message[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
   
   // Send message along with sender's identity
-  char buf[100];
-  sprintf(buf, "%c: %s", SENDER_ID, message.c_str());
-  
-  rf95.send((uint8_t*)buf, strlen(buf) + 1); // Include null-termination
+  rf95.send(message, len);
   rf95.waitPacketSent();
   Serial.println("Message sent.");
 }
