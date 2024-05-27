@@ -1,8 +1,15 @@
+/* 
+  Master Of Cyber Security
+  COS60011-Technology Design Porject
+  Created by: Ethan PP Cutting - 100942775 - 17/05/2023
+  modified last: Ethan PP Cutting - 25/05/2023
+*/
 const WebSocket = require('ws');
 
 const wss = new WebSocket.Server({ port: 8080 });
 
-wss.on('connection', function connection(ws) {
+wss.on('connection', function connection(ws) 
+{
   console.log('Client connected');
 
   ws.on('message', function incoming(message) {

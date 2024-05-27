@@ -1,3 +1,12 @@
+// 
+//    Master Of Cyber Security
+//    COS60011-Technology Design Porject
+//    Created by: Ethan PP Cutting - 100942775 - 19/05/2023
+//	  modified last: Ethan PP Cutting - 27/05/2023
+//    Group Members Part
+//    Sachin: Send ID
+//    Karan: Hard Code password
+//    Sabdar: Messages are to be encrypted using a stream cipher
 #include <SPI.h>
 #include <RH_RF95.h>
 #include <AES.h> // Include the AES library
@@ -33,12 +42,12 @@ void setup() {
 }
 
 void loop() {
-  // Hardcoded password
+  // Hardcoded password (It defines a hardcoded password ("hi") and an input buffers and It waits for the user to input a password via the serial monitor, It reads the input from the serial monitor and compares it with the hardcoded password.)
   char password[] = "hi";
 
   // Input buffer
   char input[100];
-  memset(input, 0, sizeof(input)); // Initialize buffer to all zeroes
+  memset(input, 0, sizeof(input)); // Initialise buffer to all zeroes
 
   Serial.print("Enter password: ");
   while (Serial.available() == 0); // Wait for input
@@ -66,23 +75,23 @@ void loop() {
   } else {
     Serial.println("Access denied!");
     
-    // Prepare the message with sender's identity
+    // Prepare the message with sender's identity (If the password doesn't match, it denies access by preparing a denial message, encrypting it, and sending it over LoRa.)
     String message = "Denied";
 
-    // Encrypt the message
+    // Encrypt the message 
     byte encrypted[16]; // AES-128 encryption produces 16-byte output
     aes.encrypt((byte*)message.c_str(), encrypted);
 
-    // Send the encrypted message over LoRa
+    // Send the encrypted message over LoRa ()
     sendMessage(encrypted, 16);
     
-    // Add your code for denying access here
   }
 
-  delay(1000); // Delay for stability
+  delay(1000); // It adds a delay of 1000 milliseconds for stability before repeating the loop.
+
 }
 
-// Definition of the sendMessage function
+// Definition of the sendMessage function  (If the password matches, it grants access by preparing a message, encrypting it using AES, and sending it over LoRa using the sendMessage() function)
 void sendMessage(byte* message, size_t len) {
   // Print the sender ID and message being sent
   Serial.print("Sending from Sender ");
